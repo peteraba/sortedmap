@@ -9,10 +9,10 @@ key1, key2, key3 := "key1", "key2", "key3"
 value1, value2, value2b, value3 := 1, 2, -2, 3
 
 sm := sortedmap.New[string, int]().
-    Set(key1, value1).
+    Set(key3, value3).
     Set(key2, value2).
     Set(key2, value2b).
-    Set(key3, value3)
+    Set(key1, value1)
 
 sm.Get(key2) // -2
 sm.Len() // 3
@@ -22,6 +22,11 @@ sm.HasAll(key1, key2, "nope") // false
 sm.HasAny(key1, key2) // true
 sm.HasAny(key1, key2, "nope") // true
 sm.Delete(key1)
+sm.Values() // [1, -2, 3]
+
+for key, value := sm.Items() {
+    fmt.Println(key, value)
+}
 ```
 
 ### Creating a sorted map with capacity

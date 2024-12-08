@@ -2,6 +2,7 @@ package sortedmap
 
 import (
 	"errors"
+	"iter"
 	"sort"
 	"sync"
 
@@ -188,13 +189,25 @@ func (sm *SortedMap[K, T]) Keys() []K {
 	return sm.sortedKeys
 }
 
-func (sm *SortedMap[K, T]) Items() []T {
+func (sm *SortedMap[K, T]) Items() iter.Seq2[K, T] {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	keys := sm.Keys()
-	values := make([]T, 0, len(keys))
-	for _, key := range keys {
+	return func(yield func(K, T) bool) {
+		for _, key := range sm.sortedKeys {
+			if !yield(key, sm.items[key]) {
+				return
+			}
+		}
+	}
+}
+
+func (sm *SortedMap[K, T]) Values() []T {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	values := make([]T, 0, len(sm.items))
+	for _, key := range sm.sortedKeys {
 		values = append(values, sm.items[key])
 	}
 

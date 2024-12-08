@@ -96,15 +96,24 @@ func TestSortedMap_Keys(t *testing.T) {
 func TestSortedMap_Items(t *testing.T) {
 	key1, key2, key3 := "key1", "key2", "key3"
 	value1, value2, value3 := "value1", "value2", "value3"
-	expectedValues := []string{value1, value2, value3}
 
 	sm := sortedmap.New[string, string]().
-		Set(key1, value1).
 		Set(key2, value2).
+		Set(key1, value1).
 		Set(key3, value3)
 
-	actual := sm.Items()
-	assert.Equal(t, expectedValues, actual)
+	expectedKeys := []string{key1, key2, key3}
+	expectedValues := []string{value1, value2, value3}
+
+	actualKeys := make([]string, 0, 3)
+	actualValues := make([]string, 0, 3)
+	for key, value := range sm.Items() {
+		actualKeys = append(actualKeys, key)
+		actualValues = append(actualValues, value)
+	}
+
+	assert.Equal(t, expectedKeys, actualKeys)
+	assert.Equal(t, expectedValues, actualValues)
 }
 
 func TestSortedMap_Complex(t *testing.T) {
@@ -210,7 +219,7 @@ func TestSortedMap_NewWithCapacity(t *testing.T) {
 
 	assert.Equal(t, 0, sm.Len())
 	assert.Equal(t, 0, len(sm.Keys()))
-	assert.Equal(t, 0, len(sm.Items()))
+	assert.Equal(t, 0, len(sm.Values()))
 }
 
 func TestSortedMap_NewFrom(t *testing.T) {
@@ -220,5 +229,5 @@ func TestSortedMap_NewFrom(t *testing.T) {
 
 	assert.Equal(t, 1, sm.Len())
 	assert.Equal(t, []string{key1}, sm.Keys())
-	assert.Equal(t, []string{value1}, sm.Items())
+	assert.Equal(t, []string{value1}, sm.Values())
 }
