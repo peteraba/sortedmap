@@ -105,6 +105,18 @@ func (sm *SortedMap[K, T]) Get(key K) (T, error) {
 	return value, nil
 }
 
+func (sm *SortedMap[K, T]) MustGet(key K) T {
+	sm.mu.RLock()
+	defer sm.mu.RUnlock()
+
+	value, exists := sm.items[key]
+	if !exists {
+		panic(ErrKeyDoesNotExist)
+	}
+
+	return value
+}
+
 func (sm *SortedMap[K, T]) Len() int {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
