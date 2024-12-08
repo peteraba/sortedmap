@@ -46,10 +46,29 @@ type SortedMap[K constraints.Ordered, T any] struct {
 	sortedKeys []K
 }
 
-func NewSortedMap[K constraints.Ordered, T any]() *SortedMap[K, T] {
+func New[K constraints.Ordered, T any]() *SortedMap[K, T] {
 	return &SortedMap[K, T]{
 		items:      make(map[K]T),
 		sortedKeys: make([]K, 0),
+	}
+}
+
+func NewWithCapacity[K constraints.Ordered, T any](capacity int) *SortedMap[K, T] {
+	return &SortedMap[K, T]{
+		items:      make(map[K]T, capacity),
+		sortedKeys: make([]K, 0, capacity),
+	}
+}
+
+func NewFrom[K constraints.Ordered, T any](key K, value T) *SortedMap[K, T] {
+	items := make(map[K]T, 1)
+	items[key] = value
+
+	sortedKeys := []K{key}
+
+	return &SortedMap[K, T]{
+		items:      items,
+		sortedKeys: sortedKeys,
 	}
 }
 
@@ -104,12 +123,12 @@ func (sm *SortedMap[K, T]) Has(key K) bool {
 	return sm.has(key)
 }
 
-func (sm *SortedMap[K, T]) HasAll(key ...K) bool {
+func (sm *SortedMap[K, T]) HasAll(keys ...K) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	for _, k := range key {
-		if _, exists := sm.items[k]; !exists {
+	for _, key := range keys {
+		if _, exists := sm.items[key]; !exists {
 			return false
 		}
 	}
@@ -117,12 +136,12 @@ func (sm *SortedMap[K, T]) HasAll(key ...K) bool {
 	return true
 }
 
-func (sm *SortedMap[K, T]) HasAny(key ...K) bool {
+func (sm *SortedMap[K, T]) HasAny(keys ...K) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
-	for _, k := range key {
-		if _, exists := sm.items[k]; exists {
+	for _, key := range keys {
+		if _, exists := sm.items[key]; exists {
 			return true
 		}
 	}
@@ -130,17 +149,19 @@ func (sm *SortedMap[K, T]) HasAny(key ...K) bool {
 	return false
 }
 
-func (sm *SortedMap[K, T]) Delete(key K) *SortedMap[K, T] {
+func (sm *SortedMap[K, T]) Delete(keys ...K) *SortedMap[K, T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
-	if !sm.has(key) {
-		return sm
+	for _, key := range keys {
+		if !sm.has(key) {
+			continue
+		}
+
+		delete(sm.items, key)
+
+		sm.sortedKeys = deleteSorted(sm.sortedKeys, key)
 	}
-
-	delete(sm.items, key)
-
-	sm.sortedKeys = deleteSorted(sm.sortedKeys, key)
 
 	return sm
 }
