@@ -41,13 +41,14 @@ func deleteSorted[K constraints.Ordered](slice []K, value K) []K {
 }
 
 type SortedMap[K constraints.Ordered, T any] struct {
-	mu         sync.RWMutex
+	mu         *sync.RWMutex
 	items      map[K]T
 	sortedKeys []K
 }
 
 func New[K constraints.Ordered, T any]() *SortedMap[K, T] {
 	return &SortedMap[K, T]{
+		mu:         &sync.RWMutex{},
 		items:      make(map[K]T),
 		sortedKeys: make([]K, 0),
 	}
@@ -55,6 +56,7 @@ func New[K constraints.Ordered, T any]() *SortedMap[K, T] {
 
 func NewWithCapacity[K constraints.Ordered, T any](capacity int) *SortedMap[K, T] {
 	return &SortedMap[K, T]{
+		mu:         &sync.RWMutex{},
 		items:      make(map[K]T, capacity),
 		sortedKeys: make([]K, 0, capacity),
 	}
@@ -67,6 +69,7 @@ func NewFrom[K constraints.Ordered, T any](key K, value T) *SortedMap[K, T] {
 	sortedKeys := []K{key}
 
 	return &SortedMap[K, T]{
+		mu:         &sync.RWMutex{},
 		items:      items,
 		sortedKeys: sortedKeys,
 	}
