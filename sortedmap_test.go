@@ -36,6 +36,29 @@ func TestSortedMap_HasGetNonExistentKey(t *testing.T) {
 	assert.ErrorIs(t, sortedmap.ErrKeyDoesNotExist, err)
 }
 
+func TestSortedMap_HasAll(t *testing.T) {
+	key1, key2, key3 := "key1", "key2", "key3"
+	value1, value2 := "value1", "value2"
+
+	sm := sortedmap.NewSortedMap[string, string]().
+		Set(key1, value1).
+		Set(key2, value2)
+
+	assert.True(t, sm.HasAll(key1, key2))
+	assert.False(t, sm.HasAll(key1, key2, key3))
+}
+
+func TestSortedMap_HasAny(t *testing.T) {
+	key1, key2, key3 := "key1", "key2", "key3"
+	value1 := "value1"
+
+	sm := sortedmap.NewSortedMap[string, string]().
+		Set(key1, value1)
+
+	assert.True(t, sm.HasAny(key1, key2, key3))
+	assert.False(t, sm.HasAny(key2, key3))
+}
+
 func TestSortedMap_Delete(t *testing.T) {
 	key1 := "key1"
 	value1 := "value1"
