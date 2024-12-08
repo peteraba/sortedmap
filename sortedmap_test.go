@@ -14,7 +14,7 @@ func TestSortedMap_SetHasAndGet(t *testing.T) {
 	key1 := "key1"
 	value1 := "value1"
 
-	sm := sortedmap.NewSortedMap[string]().
+	sm := sortedmap.NewSortedMap[string, string]().
 		Set(key1, value1)
 	require.True(t, sm.Has(key1))
 
@@ -27,7 +27,7 @@ func TestSortedMap_SetHasAndGet(t *testing.T) {
 func TestSortedMap_HasGetNonExistentKey(t *testing.T) {
 	key1 := "key1"
 
-	sm := sortedmap.NewSortedMap[string]()
+	sm := sortedmap.NewSortedMap[string, string]()
 
 	_, err := sm.Get(key1)
 	require.Error(t, err)
@@ -40,7 +40,7 @@ func TestSortedMap_Delete(t *testing.T) {
 	key1 := "key1"
 	value1 := "value1"
 
-	sm := sortedmap.NewSortedMap[string]()
+	sm := sortedmap.NewSortedMap[string, string]()
 	sm.Set(key1, value1)
 	require.True(t, sm.Has(key1))
 
@@ -55,7 +55,7 @@ func TestSortedMap_Keys(t *testing.T) {
 	value1, value2, value3 := "value1", "value2", "value3"
 	expectedKeys := []string{key1, key2, key3}
 
-	sm := sortedmap.NewSortedMap[string]().
+	sm := sortedmap.NewSortedMap[string, string]().
 		Set(key1, value1).
 		Set(key2, value2).
 		Set(key3, value3)
@@ -69,7 +69,7 @@ func TestSortedMap_Items(t *testing.T) {
 	value1, value2, value3 := "value1", "value2", "value3"
 	expectedValues := []string{value1, value2, value3}
 
-	sm := sortedmap.NewSortedMap[string]().
+	sm := sortedmap.NewSortedMap[string, string]().
 		Set(key1, value1).
 		Set(key2, value2).
 		Set(key3, value3)
@@ -82,7 +82,7 @@ func TestSortedMap_Complex(t *testing.T) {
 	key1, key2, key2b, key3 := "key1", "key2", "key2", "key3"
 	value1, value2, value2b, value3 := 1, 2, -2, 3
 
-	sm := sortedmap.NewSortedMap[int]().
+	sm := sortedmap.NewSortedMap[string, int]().
 		Set(key1, value1).
 		Set(key2, value2).
 		Set(key2b, value2b).
@@ -104,49 +104,73 @@ func TestSortedMap_ParallelSet(t *testing.T) {
 	key1, key2, key2b, key3 := "key1", "key2", "key2", "key3"
 	value1, value2, value2b, value3 := 1, 2, -2, 3
 
-	sm := sortedmap.NewSortedMap[int]()
+	sm := sortedmap.NewSortedMap[string, int]()
 
 	go func() {
-		time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
 
 		sm.Set(key1, value1).Set(key2, value2)
 	}()
 
 	go func() {
-		time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
 
 		sm.Set(key2b, value2b).Set(key3, value3)
 	}()
 
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(time.Millisecond)
 
 	assert.Equal(t, 3, sm.Len())
 	assert.Equal(t, []string{key1, key2, key3}, sm.Keys())
+}
+
+func TestSortedMap_ParallelSetFloatFloat(t *testing.T) {
+	key1, key2, key2b, key3 := 1.23, 2.34, 2.34, 3.45
+	value1, value2, value2b, value3 := 8.34, 9.45, -9.45, 10.56
+
+	sm := sortedmap.NewSortedMap[float64, float64]()
+
+	go func() {
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
+
+		sm.Set(key1, value1).Set(key2, value2)
+	}()
+
+	go func() {
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
+
+		sm.Set(key2b, value2b).Set(key3, value3)
+	}()
+
+	time.Sleep(time.Millisecond)
+
+	assert.Equal(t, 3, sm.Len())
+	assert.Equal(t, []float64{key1, key2, key3}, sm.Keys())
 }
 
 func TestSortedMap_ParallelDelete(t *testing.T) {
 	key1, key2, key2b, key3 := "key1", "key2", "key2", "key3"
 	value1, value2, value2b, value3 := 1, 2, -2, 3
 
-	sm := sortedmap.NewSortedMap[int]().
+	sm := sortedmap.NewSortedMap[string, int]().
 		Set(key1, value1).
 		Set(key2, value2).
 		Set(key2b, value2b).
 		Set(key3, value3)
 
 	go func() {
-		time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
 
 		sm.Delete(key1)
 	}()
 
 	go func() {
-		time.Sleep(time.Duration(rand.Intn(10)) * time.Millisecond)
+		time.Sleep(time.Duration(rand.Intn(500)) * time.Microsecond)
 
 		sm.Delete(key3)
 	}()
 
-	time.Sleep(20 * time.Millisecond)
+	time.Sleep(time.Millisecond)
 
 	assert.Equal(t, 1, sm.Len())
 	assert.Equal(t, []string{key2}, sm.Keys())

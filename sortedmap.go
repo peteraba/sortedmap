@@ -4,20 +4,32 @@ import (
 	"errors"
 	"sort"
 	"sync"
+
+	"golang.org/x/exp/constraints"
 )
 
-func insertSorted(slice []string, value string) []string {
-	i := sort.SearchStrings(slice, value)
+func insertSorted[K constraints.Ordered](slice []K, value K) []K {
+	i := sort.Search(
+		len(slice),
+		func(i int) bool {
+			return slice[i] >= value
+		},
+	)
 
-	slice = append(slice, "")
+	slice = append(slice, value)
 	copy(slice[i+1:], slice[i:])
 	slice[i] = value
 
 	return slice
 }
 
-func deleteSorted(slice []string, value string) []string {
-	i := sort.SearchStrings(slice, value)
+func deleteSorted[K constraints.Ordered](slice []K, value K) []K {
+	i := sort.Search(
+		len(slice),
+		func(i int) bool {
+			return slice[i] >= value
+		},
+	)
 
 	if i < len(slice) && slice[i] == value {
 		copy(slice[i:], slice[i+1:])
@@ -28,20 +40,26 @@ func deleteSorted(slice []string, value string) []string {
 	return slice
 }
 
-type SortedMap[T any] struct {
+type SortedMap[K constraints.Ordered, T any] struct {
 	mu         sync.RWMutex
-	items      map[string]T
-	sortedKeys []string
+	items      map[K]T
+	sortedKeys []K
 }
 
-func NewSortedMap[T any]() *SortedMap[T] {
-	return &SortedMap[T]{
-		items:      make(map[string]T),
-		sortedKeys: make([]string, 0),
+func NewSortedMap[K constraints.Ordered, T any]() *SortedMap[K, T] {
+	return &SortedMap[K, T]{
+		items:      make(map[K]T),
+		sortedKeys: make([]K, 0),
 	}
 }
 
-func (sm *SortedMap[T]) Set(key string, value T) *SortedMap[T] {
+func (sm *SortedMap[K, T]) has(key K) bool {
+	_, exists := sm.items[key]
+
+	return exists
+}
+
+func (sm *SortedMap[K, T]) Set(key K, value T) *SortedMap[K, T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -56,7 +74,7 @@ func (sm *SortedMap[T]) Set(key string, value T) *SortedMap[T] {
 
 var ErrKeyDoesNotExist = errors.New("key does not exist")
 
-func (sm *SortedMap[T]) Get(key string) (T, error) {
+func (sm *SortedMap[K, T]) Get(key K) (T, error) {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -68,7 +86,7 @@ func (sm *SortedMap[T]) Get(key string) (T, error) {
 	return value, nil
 }
 
-func (sm *SortedMap[T]) Len() int {
+func (sm *SortedMap[K, T]) Len() int {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -79,20 +97,14 @@ func (sm *SortedMap[T]) Len() int {
 	return len(sm.items)
 }
 
-func (sm *SortedMap[T]) has(key string) bool {
-	_, exists := sm.items[key]
-
-	return exists
-}
-
-func (sm *SortedMap[T]) Has(key string) bool {
+func (sm *SortedMap[K, T]) Has(key K) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
 	return sm.has(key)
 }
 
-func (sm *SortedMap[T]) HasAll(key ...string) bool {
+func (sm *SortedMap[K, T]) HasAll(key ...K) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -105,7 +117,7 @@ func (sm *SortedMap[T]) HasAll(key ...string) bool {
 	return true
 }
 
-func (sm *SortedMap[T]) HasAny(key ...string) bool {
+func (sm *SortedMap[K, T]) HasAny(key ...K) bool {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
@@ -118,7 +130,7 @@ func (sm *SortedMap[T]) HasAny(key ...string) bool {
 	return false
 }
 
-func (sm *SortedMap[T]) Delete(key string) *SortedMap[T] {
+func (sm *SortedMap[K, T]) Delete(key K) *SortedMap[K, T] {
 	sm.mu.Lock()
 	defer sm.mu.Unlock()
 
@@ -133,14 +145,14 @@ func (sm *SortedMap[T]) Delete(key string) *SortedMap[T] {
 	return sm
 }
 
-func (sm *SortedMap[T]) Keys() []string {
+func (sm *SortedMap[K, T]) Keys() []K {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
 	return sm.sortedKeys
 }
 
-func (sm *SortedMap[T]) Items() []T {
+func (sm *SortedMap[K, T]) Items() []T {
 	sm.mu.RLock()
 	defer sm.mu.RUnlock()
 
